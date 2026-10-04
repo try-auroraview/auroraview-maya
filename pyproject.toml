@@ -1,0 +1,42 @@
+[build-system]
+requires = [
+  "hatchling==1.17.1; python_version < '3.8'",
+  "hatchling>=1.24; python_version >= '3.8'",
+]
+build-backend = "hatchling.build"
+
+[project]
+name = "auroraview-maya"
+version = "0.0.0.dev0"
+description = "Maya host adapter for AuroraView"
+readme = "README.md"
+requires-python = ">=3.7"
+license = { file = "LICENSE" }
+dependencies = ["auroraview>=0.5.11,<0.6.0"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.7",
+  "License :: OSI Approved :: MIT License",
+]
+
+[project.urls]
+Repository = "https://github.com/try-auroraview/auroraview-maya"
+Issues = "https://github.com/try-auroraview/auroraview-maya/issues"
+Upstream = "https://github.com/try-auroraview/auroraview"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/auroraview_maya"]
+
+[tool.hatch.build.targets.sdist]
+only-include = [
+  "src", "tests", "scripts", "migration", "README.md", "LICENSE", "AGENTS.md",
+  "PROVENANCE.json", "pyproject.toml", "justfile", "vx.toml", ".github/workflows/ci.yml",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py37"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

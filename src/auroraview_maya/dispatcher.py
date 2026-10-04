@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, TypeVar
 
-from ..base import ThreadDispatcherBackend
+from auroraview.utils.thread_dispatcher.base import ThreadDispatcherBackend
 
 T = TypeVar("T")
 
