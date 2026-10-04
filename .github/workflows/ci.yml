@@ -1,0 +1,81 @@
+name: Maya adapter source and package CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: maya-source-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-package:
+    name: Source and installed package (no Maya SDK), ${{ matrix.os }}, Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-latest]
+        python: ['3.7', '3.11', '3.12']
+    env:
+      AURORAVIEW_CORE_SOURCE: ${{ github.workspace }}/.core-source
+      UV_CACHE_DIR: ${{ github.workspace }}/.uv-cache
+    steps:
+      - uses: actions/checkout@v7
+      - name: Checkout pinned public Core contract source
+        uses: actions/checkout@v7
+        with:
+          repository: try-auroraview/auroraview
+          ref: 7da726ca3b593808e707072a306cf314eda0346a
+          path: .core-source
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: loonghao/vx@vx-v0.9.33
+        with:
+          version: '0.9.33'
+          github-token: ${{ github.token }}
+      - name: Prepare development dependencies in the runner environment
+        shell: bash
+        run: |
+          echo "AURORAVIEW_TEST_PYTHON=$(python -c 'import sys; print(sys.executable)')" >> "$GITHUB_ENV"
+          if [ '${{ matrix.python }}' = '3.7' ]; then
+            backend='hatchling==1.17.1'
+          else
+            backend='hatchling>=1.24'
+          fi
+          vx uv@0.12.7 pip install --python "$(python -c 'import sys; print(sys.executable)')" "$backend" "typing_extensions==4.7.1"
+          vx just --version
+      - name: Mocked/source contract gate (no native SDK)
+        run: vx just test
+      - name: Build and isolated installed-wheel gate (source Core, no native SDK)
+        run: vx just package-check
+
+  lint:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    env:
+      AURORAVIEW_CORE_SOURCE: unused-for-lint
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - uses: loonghao/vx@vx-v0.9.33
+        with:
+          version: '0.9.33'
+          github-token: ${{ github.token }}
+      - name: Prepare lint dependencies
+        shell: bash
+        run: |
+          echo "AURORAVIEW_TEST_PYTHON=$(python -c 'import sys; print(sys.executable)')" >> "$GITHUB_ENV"
+          vx uv@0.12.7 pip install --python "$(python -c 'import sys; print(sys.executable)')" ruff
+          vx just --version
+      - run: vx just lint format-check

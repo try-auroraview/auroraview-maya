@@ -1,0 +1,36 @@
+{
+  "source_repository": "https://github.com/try-auroraview/auroraview",
+  "original_repository": "https://github.com/loonghao/auroraview",
+  "source_commit": "7da726ca3b593808e707072a306cf314eda0346a",
+  "source_branch": "main",
+  "source_main_commits": 1618,
+  "history_preserved": true,
+  "history_scope": "selected public paths and dispatcher predecessor; rewritten Git hashes",
+  "filtered_head": "8b4c52735755b5ce1c64d20c715711f798b7a527",
+  "retained_commits": 8,
+  "tags_copied": false,
+  "github_issues_copied": false,
+  "filter_tool": "git-filter-repo",
+  "path_mapping": {
+    "LICENSE": "LICENSE",
+    "python/auroraview/utils/thread_dispatcher.py": "migration/legacy-thread-dispatcher.py (historical; deleted upstream)",
+    "python/auroraview/utils/thread_dispatcher/backends/maya.py": "src/auroraview_maya/dispatcher.py",
+    "python/auroraview/adapter/hosts.py": "src/auroraview_maya/host.py (narrowed to Maya in initialization commit)"
+  },
+  "commit_map_sha256": "5922fd6febf0693f8ee7eab1e067e9bc3f6802284fa53a8226bde09c2f5ac497",
+  "source_files": {
+    "LICENSE": "471e51d3c7259a8f2d91fd4d5d6c5990d391d0dc848993095fb7095cd3dcab06",
+    "python/auroraview/utils/thread_dispatcher/backends/maya.py": "3398ef274e925a2a12e87cc504196b4b5678bc32778fab03e63d9362465793d4",
+    "python/auroraview/adapter/hosts.py": "c416ff948b1c117fe03d5269f64f53a9ae086c9d0457841bdf6f5c4428f754d1"
+  },
+  "implementation_changes": [
+    "Maya dispatcher shared base import points to Core contract.",
+    "Shared host source narrowed to Maya class, retaining Core Qt mixin/base; dispatcher spec points to this package.",
+    "Explicit opt-in registration replaces known bundled slots in existing Core registries."
+  ],
+  "publication": "not published; development candidate; native Maya and released dependency acceptance are separate gates",
+  "source_hash_policy": {
+    "LICENSE": "normalize CRLF to LF before SHA256; canonical MIT text unchanged",
+    "python": "raw bytes; upstream .gitattributes pins *.py eol=lf"
+  }
+}
