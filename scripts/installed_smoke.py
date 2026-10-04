@@ -7,7 +7,6 @@ import os
 import subprocess
 import sys
 import sysconfig
-import venv
 import zipfile
 from pathlib import Path
 
@@ -27,7 +26,19 @@ def main():
     if not args.inside:
         environment = root / (".install-env-py%d%d" % sys.version_info[:2])
         if not environment.exists():
-            venv.EnvBuilder(with_pip=False).create(str(environment))
+            run(
+                [
+                    "vx",
+                    "--no-auto-install",
+                    "--cache-mode",
+                    "offline",
+                    "uv@0.12.7",
+                    "venv",
+                    "--python",
+                    sys.executable,
+                    str(environment),
+                ]
+            )
         python = environment / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
         uv = [
             "vx",
