@@ -27,6 +27,10 @@ install-smoke:
 
 package-check: build artifact-check install-smoke
 
+# Requires a fresh environment containing the public Core and candidate wheels.
+published-check core-wheel core-sha256:
+    vx --no-auto-install --cache-mode offline uv@0.12.7 run --no-project --python "{{python}}" python -I scripts/published_smoke.py --dist "{{dist}}" --core-wheel "{{core-wheel}}" --core-sha256 "{{core-sha256}}"
+
 format:
     vx --no-auto-install --cache-mode offline uv@0.12.7 run --no-project --python "{{python}}" -m ruff format src tests scripts
     vx --no-auto-install --cache-mode offline uv@0.12.7 run --no-project --python "{{python}}" -m ruff check --fix src tests scripts

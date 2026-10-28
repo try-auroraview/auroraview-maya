@@ -56,13 +56,20 @@ runner environment and uses the same recipes.
 | --- | --- | --- |
 | Source/no SDK | Python 3.7+, fake `maya.utils`, both import orders, host metadata, registration replacement | Source contract and scheduling behavior |
 | Package/no SDK | Wheel + sdist metadata/license/payload and isolated installed-wheel tests | Packaging and installed code, using pinned source Core |
-| Released Core | Dependency range against the official Core wheel | Separate evidence required; source gates alone do not certify it |
+| Released Core | Official Core 0.5.11 wheels on Windows, Python 3.7 and 3.12 | CI verifies public wheel hashes, installed adapter/native bytes and the mocked-SDK tests; other versions in the dependency range remain unverified |
 | Real Maya | Maya versions, their Python/PySide versions, parent/dock ownership and owner thread | Required before release; not covered by mocks |
 | Native bridge | Real Qt/WebView JS return, close/restart, deadlines and late admission | Must use the exact public Core build; prior private joint tests are not a whole-ecosystem release gate |
 | Standalone | Same Core API outside Maya, including no-Qt shell | Core acceptance required; not exercised by this package |
 
 No CI job uses a Maya license, modifies Maya startup files, changes user scenes,
 or marks an absent native SDK as a passed host acceptance run.
+
+The released-Core job uses a fresh environment and an isolated interpreter,
+without a Core source checkout or source-path injection. It disables Core's
+automatic WebView warmup and rejects empty or skipped contract suites.
+`vx just published-check <core-wheel> <sha256>` runs the same gate when
+`AURORAVIEW_TEST_PYTHON` points to an environment containing the public Core and
+candidate adapter wheels. This verifies installed APIs, not a real Maya session.
 
 ## History and existing references
 

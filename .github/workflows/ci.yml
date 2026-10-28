@@ -79,3 +79,72 @@ jobs:
           vx uv@0.12.7 pip install --python "$(python -c 'import sys; print(sys.executable)')" ruff
           vx just --version
       - run: vx just lint format-check
+
+  published-core:
+    name: Published Core (no Maya SDK), Python ${{ matrix.python }}
+    runs-on: windows-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: '3.7'
+            wheel-tag: cp37-cp37m
+          - python: '3.12'
+            wheel-tag: cp38-abi3
+    env:
+      AURORAVIEW_CORE_SOURCE: unused-for-published-gate
+      AURORAVIEW_DISABLE_WARMUP: '1'
+      CORE_VERSION: '0.5.11'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: loonghao/vx@vx-v0.9.33
+        with:
+          version: '0.9.33'
+          github-token: ${{ github.token }}
+      - name: Build candidate package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $env:AURORAVIEW_TEST_PYTHON = Join-Path $env:pythonLocation 'python.exe'
+          $backend = if ('${{ matrix.python }}' -eq '3.7') { 'hatchling==1.17.1' } else { 'hatchling>=1.24' }
+          vx uv@0.12.7 pip install --python $env:AURORAVIEW_TEST_PYTHON $backend
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          vx just build artifact-check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Install official Core and adapter wheels in a fresh environment
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $release = Invoke-RestMethod "https://pypi.org/pypi/auroraview/$env:CORE_VERSION/json"
+          $filename = "auroraview-$env:CORE_VERSION-${{ matrix.wheel-tag }}-win_amd64.whl"
+          $assets = @($release.urls | Where-Object { $_.filename -eq $filename })
+          if ($assets.Count -ne 1) { throw "Expected one official wheel: $filename" }
+          $asset = $assets[0]
+          $wheel = Join-Path $env:RUNNER_TEMP $filename
+          Invoke-WebRequest $asset.url -OutFile $wheel
+          if ((Get-FileHash $wheel -Algorithm SHA256).Hash.ToLowerInvariant() -ne $asset.digests.sha256) {
+            throw 'Official Core wheel checksum mismatch'
+          }
+          $environment = Join-Path $env:RUNNER_TEMP 'maya-published-core'
+          if (Test-Path $environment) { throw 'Published dependency gate requires a fresh environment' }
+          vx uv@0.12.7 venv --python (Join-Path $env:pythonLocation 'python.exe') $environment
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $python = Join-Path $environment 'Scripts/python.exe'
+          $adapters = @(Get-ChildItem dist/*.whl)
+          if ($adapters.Count -ne 1) { throw 'Expected one candidate adapter wheel' }
+          vx uv@0.12.7 pip install --python $python --only-binary :all: --index-url https://pypi.org/simple $wheel $adapters[0].FullName
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          vx uv@0.12.7 pip check --python $python
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "AURORAVIEW_TEST_PYTHON=$python" >> $env:GITHUB_ENV
+          "CORE_WHEEL=$wheel" >> $env:GITHUB_ENV
+          "CORE_SHA256=$($asset.digests.sha256)" >> $env:GITHUB_ENV
+      - name: Installed public dependency contract gate
+        shell: pwsh
+        run: vx just published-check "$env:CORE_WHEEL" "$env:CORE_SHA256"
